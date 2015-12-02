@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-09 16:01:49
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-11-12 17:49:04
+-- @Last Modified time: 2015-11-20 15:03:23
 -- package.path = package.path .. ";".. ";/opt/openresty/work/conf/"
 
 -- local p = "/opt/openresty/work/conf/"
@@ -11,7 +11,6 @@
 
 -- rint(package.path)       --> lua文件的搜索路径
 
-local mysql = require "resty.mysql"
 local tokentool = require "tokentool"
 local config = require "config"
 -- post only
@@ -21,13 +20,14 @@ if method ~= "POST" then
     return
 end
 -- get args
-local args = ngx.req.get_uri_args(10)
+local args = ngx.req.get_uri_args(6)
 if args.act ~= "register" and args.act ~= "login" and args.act ~= "logout" and args.act ~= "updatepwd" then
+    ngx.log(ngx.ERR,"the act:"..args.act.." is not available")
     ngx.exit(ngx.HTTP_BAD_REQUEST)
     return
 end
 
-local postargs = ngx.req.get_post_args(10)
+local postargs = ngx.req.get_post_args(6)
 
 -- connect to mysql;
 local function connect()
@@ -70,38 +70,50 @@ end
 
 function login(pargs)
     if pargs.uid == nil or pargs.pwd == nil then
+        ngx.log(ngx.ERR,"uid or pwd is nil.")
         ngx.exit(ngx.HTTP_BAD_REQUEST)
         return
     end
-    ngx.log(ngx.ERR,pargs.uid)
-    ngx.log(ngx.ERR,pargs.pwd)
-    local db = connect()
+    local auid = ngx.quote_sql_str(pargs.uid)
+    local apwd = ngx.quote_sql_str(pargs.pwd)
+    ngx.log(ngx.INFO, "uid:", auid)
+    ngx.log(ngx.INFO, "pwd:", apwd)
+    local db = config.mysql_memeber_connect()
     if db == false then
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         return
     end
 
-    local sql = "select id from chinau_member where id=".. pargs.uid .." and password=\'".. pargs.pwd .."\' limit 1"
-	ngx.log(ngx.ERR,sql)
+    local sql = "select id from chinau_member where id=".. auid .." and password=".. apwd .." limit 1"
+	ngx.log(ngx.INFO,sql)
 
     local res, err, errno, sqlstate = db:query(sql)
     if not res then
+        ngx.log(ngx.ERR,"failed to connect: ".. err .. ": ".. errno.. " ".. sqlstate)
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         return
     end
+
     --local cjson = require "cjson"
     --ngx.say(cjson.encode(res))
     if res[1] == nil then
+        ngx.log(ngx.ERR,"the sql:("..sql..") query result is null")
         ngx.exit(ngx.HTTP_FORBIDDEN)
     end
     local uid = res[1].id
-    local token, rawtoken = tokentool.gen_token(uid)
-	ngx.log(ngx.ERR,token,err)
+    local token, rawtoken = tokentool.gen_token(auid)
+	ngx.log(ngx.INFO,"gen token:",token)
 
-    local ret = tokentool.add_token(uid, token)
+    local ret = tokentool.add_token(auid, token)
     if ret == true then
         ngx.say(token)
+        local ok, err = db:set_keepalive(10000, 100)
+        if not ok then
+            ngx.log(ngx.ERR,"failed to set keepalive: ", err)
+            return
+        end
     else
+        ngx.log(ngx.ERR,"add token failed")
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
 end
@@ -135,3 +147,4 @@ elseif args.act == "updatepwd" then
 elseif args.act == "logout" then
     logout(postargs)
 end
+
