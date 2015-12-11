@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-27 11:28:51
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-11-27 16:27:39
+-- @Last Modified time: 2015-12-11 17:03:24
 
 local redis = require "resty.redis"
 local aes = require "resty.aes"
@@ -16,13 +16,12 @@ function online()
 	ngx.log(ngx.INFO,now_min, type(now_min))
 
 	local j = 0
-	for i=now_min,now_min-5,-1
-		do
-			keys[j] = "online:"..now_hor..":".. i
-			j=j+1
-		end
-	local red = config.redis_connect()
-	if red == false then
+	for i=now_min,now_min-5,-1	do
+		keys[j] = "online:"..now_hor..":".. i
+		j=j+1
+	end
+	local ret,red = red_pool.get_connect()
+	if ret == false then
 		ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
 	end
 	-- for k,v in ipairs(keys) do
@@ -32,6 +31,7 @@ function online()
 	local res, errset1 = red:sunion(unpack(keys))
 	if not res then
 		ngx.log(ngx.ERR,"failed to query: ".. errset1 )
+		red_pool.close()
 	end
 	-- local cjson = require "cjson"
 	-- ngx.say(cjson.encode(res))
@@ -44,11 +44,7 @@ function online()
 	-- ngx.log(ngx.ERR,"res len:", table.getn(res))
 	local cjson = require "cjson"
 	ngx.say(count)
-	local ok, err = red:set_keepalive(10000, 100)
-	if not ok then
-	    ngx.log(ngx.ERR,"failed to set keepalive: ", err)
-	    return
-	end
+	red_pool.close()
 	return res
 end
 

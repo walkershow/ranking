@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-12 14:49:01
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-11-27 16:43:33
+-- @Last Modified time: 2015-12-11 15:55:50
 
 local mod_name = ...
 local M = {}
@@ -15,7 +15,7 @@ local curversion = "1.0"
 local r = {}
 -- toke有效期24小时
 r['alive_time'] = 3600*24
-r['host'] = "127.0.0.1"
+r['host'] = "192.168.1.181"
 r['port'] = 6379
 
 local mysql_memeber = {}
@@ -56,6 +56,8 @@ function M.redis_connect()
 		ngx.log(ngx.ERR,"failed to select redis: "..err)
 	    return false
 	end
+
+
 	return red
 end
 
@@ -90,7 +92,7 @@ function M.mysql_memeber_connect()
 	if not db then
 	    return false
 	end
-	db:set_timeout(1000)
+	db:set_timeout(5000)
 
 	local ok, err, errno, sqlstate = db:connect
 	{
@@ -102,9 +104,10 @@ function M.mysql_memeber_connect()
 	    max_package_size =  mysql_memeber.max_package_size
 	}
 	-- local times, err = db:get_reused_times()
-	--  	ngx.log(ngx.ERR, times)
+	--  	ngx.log(ngx.ERR, "dbtime:",times)
 	if not ok then
-		ngx.log(ngx.ERR,"failed to connect: "..err..": ".. errno)
+		--errno 会有nil的情况？
+		ngx.log(ngx.ERR,"failed to connect: "..err)
 	    return false
 	end
 	db:query("SET NAMES utf8;")
@@ -145,5 +148,6 @@ M['mysql_gm'] = mysql_gm
 M['mysql_sns'] = mysql_sns
 M['version'] = curversion
 M['secrect_key'] = secrect_key
+
 
 return M

@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-27 16:37:53
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-11-28 16:51:37
+-- @Last Modified time: 2015-12-10 17:22:33
 ngx.req.read_body()
 local headers = ngx.req.get_headers()
 ngx.log(ngx.INFO,"referer:",ngx.var.http_referer)
@@ -23,6 +23,7 @@ if act == "add" then
     ngx.log(ngx.INFO,sql)
     local  res, err, errno, sqlstate =  db:query(sql, 10)
     if not res then
+        db:set_keepalive(10000, 100)
         ngx.log(ngx.ERR,"the sql:"..sql.." executed failed; bad result: ".. err.. ": ".. errno.. ": ".. sqlstate.. ".")
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
@@ -35,6 +36,7 @@ if act == "add" then
 
     res, err, errno, sqlstate = db:query(sql)
     if not res then
+        db:set_keepalive(10000, 100)
         ngx.log(ngx.ERR,"the sql:"..sql.." executed failed; bad result: ".. err.. ": ".. errno.. ": ".. sqlstate.. ".")
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         return
@@ -44,6 +46,7 @@ elseif act == "del" then
     ngx.log(ngx.INFO,sql)
     local res, err, errno, sqlstate = db:query(sql)
     if not res then
+        db:set_keepalive(10000, 100)
         ngx.log(ngx.ERR,"the sql:"..sql.." executed failed; bad result: ".. err.. ": ".. errno.. ": ".. sqlstate.. ".")
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         return

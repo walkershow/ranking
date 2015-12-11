@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-10 15:51:38
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-11-20 15:02:32
+-- @Last Modified time: 2015-12-10 17:23:25
 
 
 local tokentool = require "tokentool"
@@ -69,6 +69,7 @@ elseif "POST" == request_method then
     ngx.log(ngx.INFO,sql)
     res, err, errno, sqlstate = db:query(sql)
     if not res then
+        db:set_keepalive(10000, 100)
         ngx.log(ngx.ERR,"the sql:"..sql.." executed failed; bad result: ".. err.. ": ".. errno.. ": ".. sqlstate.. ".")
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         return

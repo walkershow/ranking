@@ -1,6 +1,6 @@
-local headers = ngx.req.get_headers()
-ngx.log(ngx.INFO,"referer:",ngx.var.http_referer)
-ngx.log(ngx.INFO,headers["content_type"])
+-- local headers = ngx.req.get_headers()
+-- ngx.log(ngx.INFO,"referer:",ngx.var.http_referer)
+-- ngx.log(ngx.INFO,headers["content_type"])
 local uri_args = ngx.req.get_uri_args(6)
 local prog_md5 = ngx.quote_sql_str(uri_args["progmd5"])
 local userid = ngx.quote_sql_str(uri_args["userid"])
@@ -26,6 +26,7 @@ if not res then
     return
 end
 if next(res) == nil then
+    db:set_keepalive(10000, 100)
     ngx.log(ngx.ERR,"res is null")
     return
 end
@@ -56,6 +57,7 @@ if next(res2) == nil then
     res2, err2, errno2, sqlstate2 =
             db:query(sql, 10)
     if not res2 then
+        db:set_keepalive(10000, 100)
        ngx.log(ngx.ERR,"the sql:"..sql.." executed failed; bad result: ".. err2.. ": ".. errno2.. ": ".. sqlstate2.. ".")
        ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         return

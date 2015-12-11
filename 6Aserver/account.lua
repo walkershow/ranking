@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-09 16:01:49
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-11-20 15:03:23
+-- @Last Modified time: 2015-12-10 17:21:35
 -- package.path = package.path .. ";".. ";/opt/openresty/work/conf/"
 
 -- local p = "/opt/openresty/work/conf/"
@@ -89,6 +89,7 @@ function login(pargs)
 
     local res, err, errno, sqlstate = db:query(sql)
     if not res then
+        db:set_keepalive(10000, 100)
         ngx.log(ngx.ERR,"failed to connect: ".. err .. ": ".. errno.. " ".. sqlstate)
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
         return
@@ -97,6 +98,7 @@ function login(pargs)
     --local cjson = require "cjson"
     --ngx.say(cjson.encode(res))
     if res[1] == nil then
+        db:set_keepalive(10000, 100)
         ngx.log(ngx.ERR,"the sql:("..sql..") query result is null")
         ngx.exit(ngx.HTTP_FORBIDDEN)
     end
@@ -109,10 +111,12 @@ function login(pargs)
         ngx.say(token)
         local ok, err = db:set_keepalive(10000, 100)
         if not ok then
+            db:set_keepalive(10000, 100)
             ngx.log(ngx.ERR,"failed to set keepalive: ", err)
             return
         end
     else
+        db:set_keepalive(10000, 100)
         ngx.log(ngx.ERR,"add token failed")
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end

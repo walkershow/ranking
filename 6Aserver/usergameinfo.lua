@@ -16,6 +16,7 @@ local sql = string.format("select  a.id as gameid,name,iconurl,type,updatesign,u
 ngx.log(ngx.INFO,sql)
 local  res, err, errno, sqlstate =  db:query(sql, 10)
 if not res then
+    db:set_keepalive(10000, 100)
     ngx.log(ngx.ERR,"the sql:"..sql.." executed failed; bad result: ".. err.. ": ".. errno.. ": ".. sqlstate.. ".")
     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     return
