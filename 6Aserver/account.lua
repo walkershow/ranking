@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-09 16:01:49
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-12-10 17:21:35
+-- @Last Modified time: 2015-12-23 16:12:57
 -- package.path = package.path .. ";".. ";/opt/openresty/work/conf/"
 
 -- local p = "/opt/openresty/work/conf/"
@@ -13,6 +13,7 @@
 
 local tokentool = require "tokentool"
 local config = require "config"
+local token_cache = ngx.shared.token_cache
 -- post only
 local method = ngx.req.get_method()
 if method ~= "POST" then
@@ -109,9 +110,13 @@ function login(pargs)
     local ret = tokentool.add_token(auid, token)
     if ret == true then
         ngx.say(token)
+        ngx.log(ngx.INFO,"set token cache:"..auid,token)
+       local succ, err, forcible = token_cache:set(auid, token, config.redisconf.alive_time) --config.redisconf.alive_time
+       if not succ then
+           ngx.log(ngx.ERR,"allocate cache failed:"..(err or "nil ")..( forcible or "nil"))
+       end
         local ok, err = db:set_keepalive(10000, 100)
         if not ok then
-            db:set_keepalive(10000, 100)
             ngx.log(ngx.ERR,"failed to set keepalive: ", err)
             return
         end

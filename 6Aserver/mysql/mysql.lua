@@ -1,13 +1,14 @@
 -- @Author: coldplay
 -- @Date:   2015-12-09 14:17:57
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-12-11 16:58:12
+-- @Last Modified time: 2015-12-14 16:48:59
 ngx.req.read_body()  -- explicitly read the req body
 local config = require "config"
 local uri_args = ngx.req.get_uri_args(1)
 local dbname = uri_args["dbname"]
 local data = ngx.req.get_body_data()
--- ngx.log(ngx.INFO, "body:", data)
+local red_pool = require "redis_pool"
+ngx.log(ngx.INFO, "body:", data)
  ngx.var.sql = data
  if string.find(data, "select ") then
      return ngx.exec("@select_"..dbname)
@@ -20,7 +21,7 @@ local data = ngx.req.get_body_data()
     if ret == false then
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
-
+    -- ngx.log(ngx.ERROR, "body:", data)
      local ans, err = red:lpush(dbname,data)
          if not ans then
          	ngx.log(ngx.ERR, err)

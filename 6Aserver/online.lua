@@ -1,13 +1,13 @@
 -- @Author: coldplay
 -- @Date:   2015-11-27 11:28:51
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-12-11 17:03:24
+-- @Last Modified time: 2015-12-15 14:51:43
 
 local redis = require "resty.redis"
 local aes = require "resty.aes"
 local str = require "resty.string"
 local config = require "config"
-
+local red_pool = require "redis_pool"
 
 function online()
 	local keys = {}

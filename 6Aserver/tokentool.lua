@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-09 16:02:45
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-12-11 11:28:54
+-- @Last Modified time: 2015-12-23 16:13:34
 
 module("tokentool", package.seeall)
 local redis = require "resty.redis"
@@ -9,6 +9,7 @@ local aes = require "resty.aes"
 local str = require "resty.string"
 local config = require "config"
 local red_pool = require "redis_pool"
+local token_cache = ngx.shared.token_cache
 
 local function connect()
     return config.redis_connect()
@@ -38,11 +39,22 @@ function del_token(uid)
 end
 
 function has_token(uid, token)
+    -- local exptime, err = token_cache:ttl(uid)
+    -- ngx.log(ngx.ERR,"token exptime:"..exptime.." ;"..err,tok)
+    tok = token_cache:get(uid)
+    if tok ~= nil then
+        ngx.log(ngx.INFO,"get token cache:",tok)
+        if tok == token then
+            return true
+        else
+            return false
+        end
+    end
     local ret,red = red_pool.get_connect()
     -- ngx.log(ngx.ERR,type(red))
     if ret == false then
         ngx.log(ngx.ERR,"connect redis failed.")
-               return false
+        return false
     end
     -- local red = connect()
     -- if red == false then
@@ -67,7 +79,7 @@ function has_token(uid, token)
     -- ngx.log(ngx.ERR,token)
     if res == token then
         -- red:set_keepalive(10000, 100)
-        return res
+        return true
     else
         ngx.log(ngx.ERR,"token is disable.")
         red_pool.close()

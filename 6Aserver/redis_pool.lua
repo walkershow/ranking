@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-12-11 10:36:14
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-12-11 16:16:56
+-- @Last Modified time: 2015-12-14 15:27:37
 
 module("redis_pool", package.seeall)
 

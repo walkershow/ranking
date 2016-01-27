@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-12-02 16:30:13
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-12-11 16:27:36
+-- @Last Modified time: 2015-12-24 10:39:07
 
 local config = require "config"
 local red_pool = require "redis_pool"
@@ -36,11 +36,13 @@ if linetime == nil then
 	end
 end
 
-local level = red:zrevrangebyscore("linetime", linetime, 0, "limit", 0 ,1)
+local level = red:zrevrangebyscore("chinau_level_config", linetime, 0, "limit", 0 ,1)
 
 local cjson = require "cjson"
-ngx.say(cjson.encode(level))
--- ngx.eof()
+-- ngx.say(level[1])
+-- ngx.say(type(level))
+ngx.say(cjson.encode{level=(level[1] or ""),linetime=linetime})
+ngx.eof()
 red_pool.close()
 
 

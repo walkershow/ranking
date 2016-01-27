@@ -1,15 +1,15 @@
 -- @Author: coldplay
 -- @Date:   2015-11-27 16:37:53
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-12-10 17:22:33
+-- @Last Modified time: 2016-01-12 11:49:16
 ngx.req.read_body()
 local headers = ngx.req.get_headers()
 ngx.log(ngx.INFO,"referer:",ngx.var.http_referer)
 ngx.log(ngx.INFO,headers["content_type"])
 local uri_args = ngx.req.get_post_args(6)
 local act = uri_args.act
-local userid = ngx.quote_sql_str(uri_args["userid"])
-local gameid = ngx.quote_sql_str(uri_args["gameid"])
+local userid = uri_args["userid"]
+local gameid = uri_args["gameid"]
 local config = require "config"
 
 local db = config.mysql_sns_connect()
