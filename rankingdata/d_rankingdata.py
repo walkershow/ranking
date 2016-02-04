@@ -3,7 +3,7 @@
 # @Author: coldplay
 # @Date:   2016-02-02 11:10:40
 # @Last Modified by:   coldplay
-# @Last Modified time: 2016-02-02 14:31:05
+# @Last Modified time: 2016-02-04 10:36:30
 import os
 import sys
 from fdfs_client.client import *
@@ -12,11 +12,13 @@ import logging
 import logging.config
 import dbutil
 import json
+import signal
+
 f_client = None
+g_bquit = False
+
 def init():
 	parser = optparse.OptionParser()
-
-
 	parser.add_option("-q", "--ip2", dest="db_ip2", default="192.168.1.183",
 			help="mysql database server IP address, default is 192.168.1.183" )
 	parser.add_option("-r", "--name2", dest="db_name2", default="gm_data",
@@ -67,27 +69,34 @@ def del_rankingpic(picdict):
 		except:
 			logger.error('exception', exc_info = True)
 
-def main():
-	global	f_client
-	init()
-	# init_fortest()
-	f_client = Fdfs_client('/etc/fdfs/client.conf')
-	# p = re.compile("装备")
-	# if p.match("装备.txt"):
-	# 	print "hihiddddddddddddd"
 
-	# bf = BlockFormatter(fmtconf)
-	# bf.Formmating(dfile, ofile)
+def onsignal_term(a,b):
+	global	g_bquit
+	g_bquit = True
+	print '退出程序...'
+
+def main():
+	global	f_client,g_bquit
+	init()
+	f_client = Fdfs_client('/etc/fdfs/client.conf')
+	signal.signal(signal.SIGTERM,onsignal_term)
+	signal.signal(signal.SIGINT,onsignal_term)
 	logger.info( "begin......" )
 	del_sql = "delete from PIC_TEMP where id=%d"
 	while 1:
-		sql = "select ID,PICURL from PIC_TEMP"
+		if g_bquit:
+			print "i'm quit"
+			break
+		sql = "select ID,PICURL from PIC_TEMP limit 1000"
 		# logger.debug( "sql:%s"%(sql) )
 		rows = dbutil.select_sql(sql)
 		if rows is None or len(rows)<=0:
-			logger.error("no talbe to locate")
+			logger.info("table is empty")
 			continue
 		for row in rows:
+			if g_bquit:
+				print "i'm quit"
+				break
 			# print row[1]
 			pic_dict = json.loads(row[1])
 			# print pic_dict
