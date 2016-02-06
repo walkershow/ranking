@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-09 16:01:49
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2015-12-23 16:12:57
+-- @Last Modified time: 2016-01-28 15:31:20
 -- package.path = package.path .. ";".. ";/opt/openresty/work/conf/"
 
 -- local p = "/opt/openresty/work/conf/"
@@ -13,6 +13,8 @@
 
 local tokentool = require "tokentool"
 local config = require "config"
+local red_pool = require "redis_pool"
+
 local token_cache = ngx.shared.token_cache
 -- post only
 local method = ngx.req.get_method()
@@ -85,7 +87,7 @@ function login(pargs)
         return
     end
 
-    local sql = "select id from chinau_member where id=".. auid .." and password=".. apwd .." limit 1"
+    local sql = "select id,line_time from chinau_member where id=".. auid .." and password=".. apwd .." limit 1"
 	ngx.log(ngx.INFO,sql)
 
     local res, err, errno, sqlstate = db:query(sql)
@@ -104,6 +106,7 @@ function login(pargs)
         ngx.exit(ngx.HTTP_FORBIDDEN)
     end
     local uid = res[1].id
+    local line_time = res[1].line_time
     local token, rawtoken = tokentool.gen_token(auid)
 	ngx.log(ngx.INFO,"gen token:",token)
 
@@ -124,6 +127,20 @@ function login(pargs)
         db:set_keepalive(10000, 100)
         ngx.log(ngx.ERR,"add token failed")
         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+    local ret,red = red_pool.get_connect()
+    if ret == false then
+        ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+    local linetime_key = string.format("level:%s:linetime",auid)
+    if line_time == nil then
+        line_time = 0
+    end
+    ngx.log(ngx.INFO, "line_time:", line_time)
+    local ok, err = red:set(linetime_key, line_time)
+    if not ok then
+        red_pool.close()
+        return
     end
 end
 

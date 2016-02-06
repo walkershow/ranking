@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-11-12 14:49:01
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2016-01-08 11:35:53
+-- @Last Modified time: 2016-01-28 11:48:14
 
 local mod_name = ...
 local M = {}
@@ -16,7 +16,7 @@ local r = {}
 -- toke有效期24小时
 local timer_interval = 5
 r['alive_time'] = 3600*24
-r['host'] = "192.168.1.181"
+r['host'] = "192.168.1.183"
 r['port'] = 6379
 
 local mysql_memeber = {}
@@ -52,6 +52,7 @@ function M.redis_connect()
 		ngx.log(ngx.ERR,"failed to connect redis: "..err)
 		return false
 	end
+
 	ok, err = red:select(1)
 	if not ok then
 		ngx.log(ngx.ERR,"failed to select redis: "..err)

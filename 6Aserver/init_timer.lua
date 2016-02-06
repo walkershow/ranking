@@ -1,7 +1,7 @@
 -- @Author: coldplay
 -- @Date:   2015-12-16 14:48:22
 -- @Last Modified by:   coldplay
--- @Last Modified time: 2016-01-12 14:29:23
+-- @Last Modified time: 2016-01-29 15:25:11
 local config = require "config"
 
 function init_timer(premature)
@@ -23,6 +23,7 @@ function init_timer(premature)
 	       -- log(ERR, "pid:"..ngx.worker.pid()) -- do the health check other routine work
 	       get_level_conf()
 	       get_hb_interval()
+	       get_upgrade_info()
 	        local ok, err = new_timer(delay, check)
 	        if not ok then
 	            log(ERR, "failed to create timer: ", err)
@@ -133,6 +134,38 @@ function get_hb_interval()
 	-- ngx.log( ngx.ERR, "heartbeat_interval:",conf_mem:get('heartbeat_interval') )
 
 	db:set_keepalive(10000, 200)
+	return true
+end
+
+function get_upgrade_info()
+	local mysql = require "resty.mysql"
+	local db = config.mysql_memeber_connect()
+	if db == false then
+	    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+	    return
+	end
+	local sql = "select program_name,program_version,program_savepath,md5,url from chinau_program_info"
+	local  res, err, errno, sqlstate = db:query(sql, 10)
+	if not res then
+	    ngx.log(ngx.ERR,"the sql:"..sql.." executed failed; bad result: ".. err.. ": ".. errno.. ": ".. sqlstate.. ".")
+	    db:set_keepalive(10000, 200)
+	    return false
+	end
+	local cjson = require "cjson"
+	local upgrade_info_cache = ngx.shared.upgrade_info_cache
+	upgrade_info_cache:set("upgrade_info", cjson.encode(res) )
+	sql = "select max(program_version) version from chinau_program_info"
+	res, err, errno, sqlstate = db:query(sql, 10)
+	if not res then
+	    ngx.log(ngx.ERR,"the sql:"..sql.." executed failed; bad result: ".. err.. ": ".. errno.. ": ".. sqlstate.. ".")
+	    db:set_keepalive(10000, 200)
+	    return false
+	end
+	local version_cache = ngx.shared.version_cache
+	version_cache:set("version", res[1]["version"] )
+	db:set_keepalive(10000, 200)
+	-- ngx.log(ngx.INFO,version_cache:get("version") )
+	-- ngx.log(ngx.INFO,upgrade_info_cache:get("upgrade_info") )
 	return true
 end
 
